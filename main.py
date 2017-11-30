@@ -3,21 +3,21 @@
 class Credentials:
     # keyring = __import__('keyring')
     import keyring
-    serviceName = 'PW-login'  # __name__
-    usernameMocked = 'username is also a secret'  # we store it in password field because it is kinda of secret too
+    serviceName = 'PW-auto-login'  # __name__
+    usernameMocked = 'username is also a secret'  # we store it in password field because it is kinda of a secret too
     separator = '|'
 
-    def getCredentials(self):
+    def get(self):
         credentials = self.keyring.get_password(self.serviceName, self.usernameMocked)
         if credentials == None:
             raise FileNotFoundError
         else:
-            separatorPos = credentials.find(self.separator)
+            separatorPos = credentials.find(self.separator) # separator is not a valid password character, so no worries here
             username = credentials[:separatorPos]
             password = credentials[separatorPos + 1:]
             return username, password
 
-    def saveCredentials(self, user, passw):
+    def store(self, user, passw):
         return self.keyring.set_password(self.serviceName, self.usernameMocked, self.separator.join([user, passw]))
 
 
@@ -49,37 +49,37 @@ def login(username, password):
         data = res.read()
 
         # print(data.decode("utf-8"))
-        print('wysłanie żądania poprawne')
-        print('czy internet ?')
+        print('wysłanie żądania poprawne') # attempted to login
+        print('czy internet ?') # we should check if we have gained the internet access. not yet.
         exit(0)
     except ssl.SSLError:
-        print('politechnika ma gówno w sieci. nie umieją zrobić certyfikatu')
+        print('politechnika ma gówno w sieci. nie umieją zrobić certyfikatu') # WUT still has its captive certificate expired. LAME.
     except TimeoutError:
         raise
     except timeout:
         from sys import stderr
-        print('najprawdopodobniej nie jesteś w sieci pwwifi-students. timeout łączenia ze stroną bajdiego ' + headers[
+        # cannot reach captive portal host. Probably you are not in the WUT local network.
+        print('najprawdopodobniej nie jesteś w sieci pwwifi-students. timeout łączenia ze stroną logowania ' + headers[
             'host'], file=stderr)
         exit(1)
 
 
 def main():
-    passy = Credentials()
+    credentails = Credentials() # credentials object
     try:
-        username, password = passy.getCredentials()
+        username, password = credentails.get() # literally try to get them
     except FileNotFoundError:
         from getpass import getpass
-        username = input('zaloguj się:')
-        password = input('haslo:')
-        passy.saveCredentials(username, password)
+        username = input('zaloguj się: ')
+        password = input('haslo: ')
+        credentails.store(username, password)
 
-    print('loguję się..')
     try:
+        print('loguję się..')  # logging in
         login(username, password)
     except Exception as e:
         raise
-        print('jakiś problem. złe dane ?')
-
+        print('jakiś problem. złe dane ?') # there is a problem. maybe credentials are wrong
 
 if __name__ == '__main__':
     main()
